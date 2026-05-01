@@ -5,3 +5,7 @@
 /data
 /tmp
 /vendor
+
+# Keep embedded web assets tracked even if a global gitignore ignores static directories.
+!internal/app/web/static/
+!internal/app/web/static/**
