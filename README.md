@@ -169,6 +169,58 @@ docker compose up --build
 
 Default bootstrap credentials in that file are placeholders only. Change them before real use.
 
+### Example Compose Install
+
+If you want to deploy from a published image instead of building locally, use a compose file like this:
+
+```yaml
+services:
+  mcportal:
+    image: ghcr.io/vincentsaluzzo/minecraft-home-portal:latest
+    container_name: mcportal
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      MCPORTAL_ADDR: ":8080"
+      MCPORTAL_DATA_DIR: "/app/data"
+      MCPORTAL_SESSION_COOKIE_NAME: "mcportal_session"
+      MCPORTAL_DISCOVERY_REFRESH: "30s"
+      MCPORTAL_LABEL_NAMESPACE: "mcportal"
+      MCPORTAL_BOOTSTRAP_ADMIN_USERNAME: "${MCPORTAL_BOOTSTRAP_ADMIN_USERNAME}"
+      MCPORTAL_BOOTSTRAP_ADMIN_PASSWORD: "${MCPORTAL_BOOTSTRAP_ADMIN_PASSWORD}"
+      DOCKER_HOST: "unix:///var/run/docker.sock"
+
+      # Example RCON secret used by a discovered server label such as:
+      # mcportal.rcon.password-env=SURVIVAL_RCON_PASSWORD
+      SURVIVAL_RCON_PASSWORD: "${SURVIVAL_RCON_PASSWORD}"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data:/app/data
+```
+
+Example `.env` file:
+
+```dotenv
+MCPORTAL_BOOTSTRAP_ADMIN_USERNAME=admin
+MCPORTAL_BOOTSTRAP_ADMIN_PASSWORD=change-me-now
+SURVIVAL_RCON_PASSWORD=replace-with-your-rcon-password
+```
+
+Then start it with:
+
+```bash
+docker compose up -d
+```
+
+The portal will be available at [http://localhost:8080](http://localhost:8080).
+
+Important notes:
+
+- the portal needs access to `/var/run/docker.sock` to discover and control containers
+- any RCON password referenced by `mcportal.rcon.password-env` must also be present in the portal container environment
+- for internet-facing deployments, put the portal behind a reverse proxy and consider a Docker socket proxy instead of mounting the raw socket directly
+
 ## GitHub Actions
 
 The repository includes [`.github/workflows/ci.yml`](/Users/vincent.saluzzo/PERSONNEL/minecraft-home-portal/.github/workflows/ci.yml).
