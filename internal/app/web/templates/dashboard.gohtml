@@ -1,0 +1,50 @@
+{{define "dashboard"}}
+  {{template "page_start" .}}
+  <section class="hero">
+    <h1>Servers</h1>
+    <p>Label-discovered Minecraft instances with access control and basic administration.</p>
+  </section>
+
+  <section class="server-grid">
+    {{if not .Servers}}
+      <div class="empty-state">
+        <h2>No servers discovered</h2>
+        <p>Add `mcportal.enabled=true` to a Minecraft container and refresh discovery.</p>
+      </div>
+    {{end}}
+
+    {{range .Servers}}
+      <article class="server-card">
+        <div class="server-card-top">
+          <div>
+            <h2><a href="/servers/{{.ID}}">{{.Name}}</a></h2>
+            <p class="meta">{{.Kind}} · {{.Visibility}}</p>
+          </div>
+          <span class="status {{if .Running}}status-up{{else}}status-down{{end}}">
+            {{if .Running}}Running{{else}}Stopped{{end}}
+          </span>
+        </div>
+
+        <dl class="details">
+          <div>
+            <dt>Connect</dt>
+            <dd>{{.Connect.Host}}:{{.Connect.Port}}</dd>
+          </div>
+          <div>
+            <dt>Players</dt>
+            <dd>{{.PlayerCount}}{{if .PlayerNames}} · {{join .PlayerNames ", "}}{{end}}</dd>
+          </div>
+          <div>
+            <dt>Version</dt>
+            <dd>{{or .Connect.Version "Unknown"}}</dd>
+          </div>
+        </dl>
+
+        {{if .LastError}}
+          <p class="warning">{{.LastError}}</p>
+        {{end}}
+      </article>
+    {{end}}
+  </section>
+  {{template "page_end" .}}
+{{end}}

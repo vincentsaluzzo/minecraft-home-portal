@@ -1,0 +1,37 @@
+{{define "page_start"}}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Minecraft Home Portal</title>
+    <link rel="stylesheet" href="/web/static/app.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <div>
+        <a class="brand" href="/">Minecraft Home Portal</a>
+        <p class="subtitle">Homelab server catalog and control plane</p>
+      </div>
+      <nav class="top-nav">
+        {{if .CurrentUser}}
+          <span class="pill">{{.CurrentUser.Username}} · {{.CurrentUser.Role}}</span>
+          <form method="post" action="/logout">
+            <button type="submit" class="link-button">Sign out</button>
+          </form>
+        {{else}}
+          <a href="/login">Sign in</a>
+        {{end}}
+      </nav>
+    </header>
+
+    <main class="page-shell">
+      {{if .Flash}}
+        <div class="flash">{{.Flash}}</div>
+      {{end}}
+{{end}}
+{{define "page_end"}}
+    </main>
+  </body>
+</html>
+{{end}}

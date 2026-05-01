@@ -1,0 +1,84 @@
+{{define "server"}}
+  {{template "page_start" .}}
+  <section class="hero">
+    <div class="hero-row">
+      <div>
+        <h1>{{.Server.Name}}</h1>
+        <p>{{.Server.Kind}} · {{.Server.Visibility}} · {{.Server.Status}}</p>
+      </div>
+      <span class="status {{if .Server.Running}}status-up{{else}}status-down{{end}}">
+        {{if .Server.Running}}Running{{else}}Stopped{{end}}
+      </span>
+    </div>
+  </section>
+
+  <section class="two-col">
+    <article class="panel">
+      <h2>Connection</h2>
+      <dl class="details">
+        <div>
+          <dt>Address</dt>
+          <dd>{{.Server.Connect.Host}}:{{.Server.Connect.Port}}</dd>
+        </div>
+        <div>
+          <dt>Version</dt>
+          <dd>{{or .Server.Connect.Version "Unknown"}}</dd>
+        </div>
+        <div>
+          <dt>Players</dt>
+          <dd>{{.Server.PlayerCount}}{{if .Server.PlayerNames}} · {{join .Server.PlayerNames ", "}}{{end}}</dd>
+        </div>
+        <div>
+          <dt>Notes</dt>
+          <dd>{{or .Server.Connect.Notes "No notes provided."}}</dd>
+        </div>
+      </dl>
+      {{if .Server.LastError}}
+        <p class="warning">{{.Server.LastError}}</p>
+      {{end}}
+    </article>
+
+    {{if and .CurrentUser (eq .CurrentUser.Role "admin")}}
+      <article class="panel">
+        <h2>Administration</h2>
+
+        <div class="action-row">
+          <form method="post" action="/servers/{{.Server.ID}}/start">
+            <button type="submit">Start</button>
+          </form>
+          <form method="post" action="/servers/{{.Server.ID}}/stop">
+            <button type="submit">Stop</button>
+          </form>
+          <form method="post" action="/servers/{{.Server.ID}}/restart">
+            <button type="submit">Restart</button>
+          </form>
+        </div>
+
+        <form method="post" action="/servers/{{.Server.ID}}/rcon/op" class="stack">
+          <label>
+            <span>Op player</span>
+            <input type="text" name="player" placeholder="Player name">
+          </label>
+          <button type="submit">Grant op</button>
+        </form>
+
+        <form method="post" action="/servers/{{.Server.ID}}/rcon/deop" class="stack">
+          <label>
+            <span>Deop player</span>
+            <input type="text" name="player" placeholder="Player name">
+          </label>
+          <button type="submit">Remove op</button>
+        </form>
+
+        <form method="post" action="/servers/{{.Server.ID}}/rcon/say" class="stack">
+          <label>
+            <span>Broadcast message</span>
+            <input type="text" name="message" placeholder="Server message">
+          </label>
+          <button type="submit">Send</button>
+        </form>
+      </article>
+    {{end}}
+  </section>
+  {{template "page_end" .}}
+{{end}}

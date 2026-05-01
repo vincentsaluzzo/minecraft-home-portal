@@ -1,0 +1,24 @@
+{{define "login"}}
+  {{template "page_start" .}}
+  <section class="auth-card">
+    <h1>Sign in</h1>
+    <p>Admins can manage servers. Viewers can see private read-only details.</p>
+
+    {{if .Error}}
+      <div class="error">{{.Error}}</div>
+    {{end}}
+
+    <form method="post" action="/login" class="stack">
+      <label>
+        <span>Username</span>
+        <input type="text" name="username" autocomplete="username" required>
+      </label>
+      <label>
+        <span>Password</span>
+        <input type="password" name="password" autocomplete="current-password" required>
+      </label>
+      <button type="submit">Sign in</button>
+    </form>
+  </section>
+  {{template "page_end" .}}
+{{end}}
