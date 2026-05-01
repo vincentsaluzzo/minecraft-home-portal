@@ -15,7 +15,9 @@ type Config struct {
 	SessionTTL             time.Duration
 	DiscoveryRefresh       time.Duration
 	DockerHost             string
+	DisableDockerDiscovery bool
 	LabelNamespace         string
+	StaticServersPath      string
 	BootstrapAdminUsername string
 	BootstrapAdminPassword string
 }
@@ -31,7 +33,9 @@ func LoadFromEnv() Config {
 		SessionTTL:             durationDefault(os.Getenv("MCPORTAL_SESSION_TTL"), 7*24*time.Hour),
 		DiscoveryRefresh:       durationDefault(os.Getenv("MCPORTAL_DISCOVERY_REFRESH"), 30*time.Second),
 		DockerHost:             os.Getenv("DOCKER_HOST"),
+		DisableDockerDiscovery: BoolFromEnv("MCPORTAL_DISABLE_DOCKER_DISCOVERY", false),
 		LabelNamespace:         stringDefault(os.Getenv("MCPORTAL_LABEL_NAMESPACE"), "mcportal"),
+		StaticServersPath:      os.Getenv("MCPORTAL_STATIC_SERVERS_PATH"),
 		BootstrapAdminUsername: os.Getenv("MCPORTAL_BOOTSTRAP_ADMIN_USERNAME"),
 		BootstrapAdminPassword: os.Getenv("MCPORTAL_BOOTSTRAP_ADMIN_PASSWORD"),
 	}

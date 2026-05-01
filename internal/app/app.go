@@ -50,14 +50,54 @@ func New(cfg config.Config) (*App, error) {
 
 	rcon := minecraft.NewClient()
 
-	dockerClient, err := discovery.NewDockerClient(cfg.DockerHost)
-	if err != nil {
-		log.Printf("docker client initialization warning: %v", err)
+	log.Printf(
+		"discovery config: docker_enabled=%t docker_host=%q static_servers_path=%q",
+		!cfg.DisableDockerDiscovery,
+		cfg.DockerHost,
+		cfg.StaticServersPath,
+	)
+
+	var dockerClient discovery.DockerAPI
+	if !cfg.DisableDockerDiscovery {
+		dockerClient, err = discovery.NewDockerClient(cfg.DockerHost)
+		if err != nil {
+			log.Printf("docker client initialization warning: %v", err)
+		}
 	}
 
-	discoveryService := discovery.New(cfg.LabelNamespace, dockerClient, rcon)
+	staticServers, err := discovery.LoadStaticServers(cfg.StaticServersPath)
+	if err != nil {
+		db.Close()
+		return nil, err
+	}
+
+	if cfg.StaticServersPath == "" {
+		log.Printf("static server catalog disabled: MCPORTAL_STATIC_SERVERS_PATH is empty")
+	} else {
+		log.Printf("static server catalog loaded: path=%q servers=%d", cfg.StaticServersPath, len(staticServers))
+		for _, server := range staticServers {
+			log.Printf(
+				"static server: id=%q name=%q control_ref=%q connect=%s:%s visibility=%q",
+				server.ID,
+				server.Name,
+				server.ControlRef,
+				server.Connect.Host,
+				server.Connect.Port,
+				server.Visibility,
+			)
+		}
+		if len(staticServers) == 0 {
+			log.Printf("static server catalog warning: file %q was read but contained zero servers", cfg.StaticServersPath)
+		}
+	}
+
+	discoveryService := discovery.New(cfg.LabelNamespace, dockerClient, rcon, !cfg.DisableDockerDiscovery, staticServers)
 	if err := discoveryService.Refresh(context.Background()); err != nil {
 		log.Printf("initial discovery warning: %v", err)
+	}
+	log.Printf("initial discovery result: total_servers=%d", len(discoveryService.All()))
+	if len(discoveryService.All()) == 0 {
+		log.Printf("initial discovery warning: no servers are currently loaded into the catalog")
 	}
 
 	funcs := template.FuncMap{
@@ -123,6 +163,10 @@ func (a *App) discoveryLoop() {
 	for range ticker.C {
 		if err := a.discovery.Refresh(context.Background()); err != nil {
 			log.Printf("discovery refresh warning: %v", err)
+			continue
+		}
+		if len(a.discovery.All()) == 0 {
+			log.Printf("discovery refresh warning: catalog is still empty after refresh")
 		}
 	}
 }

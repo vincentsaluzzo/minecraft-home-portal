@@ -126,6 +126,82 @@ The portal must be able to reach:
 - the Docker socket
 - the RCON endpoint for each server
 
+## Static Server Configuration
+
+If you do not want to rely on Docker label discovery, the portal can also load a static server catalog from a JSON file.
+
+Use these environment variables:
+
+- `MCPORTAL_STATIC_SERVERS_PATH=/app/config/servers.json`
+- `MCPORTAL_DISABLE_DOCKER_DISCOVERY=true` if you want to disable Docker discovery entirely
+
+Example `servers.json`:
+
+```json
+{
+  "servers": [
+    {
+      "id": "survival",
+      "name": "Survival",
+      "container_name": "mc-survival",
+      "control_ref": "mc-survival",
+      "kind": "minecraft-java",
+      "visibility": "public",
+      "actions": {
+        "start": true,
+        "stop": true,
+        "restart": true,
+        "op": true,
+        "deop": true,
+        "say": true
+      },
+      "connect": {
+        "host": "mc.example.com",
+        "port": "25565",
+        "version": "1.21.x",
+        "notes": "Vanilla survival"
+      },
+      "rcon": {
+        "host": "mc-survival",
+        "port": "25575",
+        "password_env_name": "SURVIVAL_RCON_PASSWORD"
+      }
+    }
+  ]
+}
+```
+
+Field notes:
+
+- `id`: stable route identifier used by the portal
+- `container_name`: display and default Docker target
+- `control_ref`: optional explicit Docker container name or ID for start/stop/restart
+- `visibility`: `public` or `private`
+- `rcon.password_env_name`: name of the environment variable that contains the RCON password inside the portal container
+
+Behavior notes:
+
+- if `MCPORTAL_DISABLE_DOCKER_DISCOVERY=false`, static servers are loaded in addition to auto-discovered ones
+- if both sources define the same `id`, the Docker-discovered entry wins
+- if Docker discovery is disabled, dashboard and details still work from the static file, and Docker lifecycle actions still work as long as `control_ref` or `container_name` points to a valid container
+
+Example compose wiring for static config:
+
+```yaml
+services:
+  mcportal:
+    image: ghcr.io/vincentsaluzzo/minecraft-home-portal:latest
+    user: "0:0"
+    environment:
+      MCPORTAL_STATIC_SERVERS_PATH: "/app/config/servers.json"
+      MCPORTAL_DISABLE_DOCKER_DISCOVERY: "true"
+      SURVIVAL_RCON_PASSWORD: "${SURVIVAL_RCON_PASSWORD}"
+    volumes:
+      - ./config/servers.json:/app/config/servers.json:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data:/app/data
+```
+
 ## Running Locally
 
 ### 1. Bootstrap an admin
@@ -179,6 +255,7 @@ services:
     image: ghcr.io/vincentsaluzzo/minecraft-home-portal:latest
     container_name: mcportal
     restart: unless-stopped
+    user: "0:0"
     ports:
       - "8080:8080"
     environment:
@@ -218,6 +295,8 @@ The portal will be available at [http://localhost:8080](http://localhost:8080).
 Important notes:
 
 - the portal needs access to `/var/run/docker.sock` to discover and control containers
+- if you mount the raw Docker socket, `user: "0:0"` is the simplest reliable option because many hosts expose the socket with permissions that a non-root container user cannot read
+- if you do not want to run the portal as root, use `group_add` with the Docker socket group on your host, or place a Docker socket proxy in front of the daemon
 - any RCON password referenced by `mcportal.rcon.password-env` must also be present in the portal container environment
 - for internet-facing deployments, put the portal behind a reverse proxy and consider a Docker socket proxy instead of mounting the raw socket directly
 
@@ -240,7 +319,9 @@ It currently does this:
 - `MCPORTAL_SESSION_COOKIE_NAME`
 - `MCPORTAL_SESSION_TTL`
 - `MCPORTAL_DISCOVERY_REFRESH`
+- `MCPORTAL_DISABLE_DOCKER_DISCOVERY`
 - `MCPORTAL_LABEL_NAMESPACE`
+- `MCPORTAL_STATIC_SERVERS_PATH`
 - `MCPORTAL_BOOTSTRAP_ADMIN_USERNAME`
 - `MCPORTAL_BOOTSTRAP_ADMIN_PASSWORD`
 - `DOCKER_HOST`
